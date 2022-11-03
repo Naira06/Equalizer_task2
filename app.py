@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+from math import ceil,floor
+import plotly.express as px
 import  streamlit_vertical_slider  as svs
 
 st.set_page_config(page_title="Equalizer", page_icon=":headphones:",layout="wide")
@@ -23,16 +26,33 @@ button_style = """
         """
 st.markdown(button_style, unsafe_allow_html=True)
 
+def plot(time,magnitude):
+    figure =px.line()
+    figure.add_scatter(x=time, y=magnitude,mode='lines',name='Uploaded Signal',line=dict(color='blue'))
+    figure.update_layout(width=5000, height=500,
+                        template='simple_white',
+                        yaxis_title='Amplitude (V)',
+                        xaxis_title="Time (Sec)",
+                        hovermode="x")
+    st.plotly_chart(figure, use_container_width=True)
+
 with st.container():
     col1, col2 = st.columns(2)
     with col1:
-        upload_file_plceholder=st.empty()
-        upload_file=upload_file_plceholder.file_uploader("Browse", type=["csv"], key="uploader")    
+        # upload_file_plceholder=st.empty()
+        # upload_file=upload_file_plceholder.file_uploader("Browse", type=["csv"], key="uploader")   
+        upload_file=st.file_uploader("Browse") 
     
   #declare then in function function
-def open_csv():
-    signal_upload=pd.read_csv(upload_file)
-    return signal_upload
+
+        def open_csv():
+            if upload_file:
+                signal_upload=pd.read_csv(upload_file)
+                if 'time' not in st.session_state:
+                        st.session_state['time'] = signal_upload[signal_upload.columns[0]].to_numpy()
+                if 'signal_drawn' not in st.session_state:
+                    st.session_state['signal_drawn'] = signal_upload[signal_upload.columns[1]].to_numpy()
+                plot(st.session_state['time'],st.session_state['signal_drawn'])
 def open_mp3():
     if upload_file.type!="mp3":
         st.error(" wrong Extension, Requierd *.mp3* ")
@@ -42,14 +62,18 @@ def open_mp3():
 with  col2:
     st.write('<style>div.row-widget.stRadio > div{flex-direction:row;justify-content: center;} </style>', unsafe_allow_html=True)
     st.write('<style>div.st-bf{flex-direction:column;} div.st-ag{font-weight:bold;padding-left:2px;}</style>', unsafe_allow_html=True)
-    choose=st.radio("",("Sine wave","Music","Vowels","Biomedical Signal"))
-    if choose =="Sine wave" or choose =="Biomedical Signal":
-        upload_file_plceholder.file_uploader("Browse", type=["csv"])    
-        if upload_file:
-          open_csv()
+    choose=st.radio("",("Sin wave","Music","Vowels","Biomedical Signal"))
+    if choose =="Sin wave" or choose =="Biomedical Signal":
+        #upload_file_plceholder.file_uploader("Browse", type=["csv"])    
+        #if upload_file:
+           open_csv()
+           
+           
+         
+           
     elif choose =="Music" or choose =="Vowels":
-        upload_file_plceholder.file_uploader("Browse", type=["mp3"])    
-        if upload_file:
+        #upload_file_plceholder.file_uploader("Browse", type=["mp3"])    
+        #if upload_file:
           open_mp3()
 
 
