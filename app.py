@@ -4,6 +4,7 @@ import  streamlit_vertical_slider  as svs
 
 st.set_page_config(page_title="Equalizer", page_icon=":headphones:",layout="wide")
 
+
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
