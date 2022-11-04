@@ -54,11 +54,9 @@ with st.container():
                     st.session_state['signal_drawn'] = signal_upload[signal_upload.columns[1]].to_numpy()
                 plot(st.session_state['time'],st.session_state['signal_drawn'])
 def open_mp3():
-    if upload_file.type!="mp3":
-        st.error(" wrong Extension, Requierd *.mp3* ")
-    else:
-      Audio=st.audio(upload_file, format='audio/mp3')
-    return Audio
+    if upload_file:
+        Audio=st.audio(upload_file, format='audio/mp3')
+        return Audio
 with  col2:
     st.write('<style>div.row-widget.stRadio > div{flex-direction:row;justify-content: center;} </style>', unsafe_allow_html=True)
     st.write('<style>div.st-bf{flex-direction:column;} div.st-ag{font-weight:bold;padding-left:2px;}</style>', unsafe_allow_html=True)
@@ -74,7 +72,7 @@ with  col2:
     elif choose =="Music" or choose =="Vowels":
         #upload_file_plceholder.file_uploader("Browse", type=["mp3"])    
         #if upload_file:
-          open_mp3()
+        open_mp3()
 
 
 
