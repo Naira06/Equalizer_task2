@@ -3,6 +3,8 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import streamlit_modal as modal
 import streamlit.components.v1 as components
+import plotly_express as px
+import plotly.graph_objects as go
 
 # ____________________________ convert two arrays to a dataframe ______________
 
@@ -16,11 +18,29 @@ def convert_to_dataframe(par1, par2, par1_name, par2_name):
 # ____________________________ plot two arrays in streamlit ______________
 
 
-def plot_two_arrays(x_axis, y_axis, x_axis_label, y_axis_label):
-    fig, ax = plt.subplots()
-    ax.plot(x_axis, y_axis)
-    ax.set_xlabel(f'{x_axis_label}')
-    ax.set_ylabel(f'{y_axis_label}')
+def sig_plot(x_axis, y_axis, x_axis_label, y_axis_label):
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=x_axis,
+        y=y_axis,
+    ))
+
+    fig.update_layout(
+        autosize=True,
+        width=500,
+        height=150,
+        margin=dict(
+            l=0,
+            r=0,
+            b=0,
+            t=0,
+            pad=0
+        ),
+        paper_bgcolor="#fff",
+        xaxis_title=f"{x_axis_label}",
+        yaxis_title=f"{y_axis_label}",
+    )
     st.plotly_chart(fig, True)
 
 
