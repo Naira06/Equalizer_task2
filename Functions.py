@@ -67,3 +67,11 @@ def popup_window(open_modal):
             if sub_btn:
                 if uplaoded_file:
                     return uplaoded_file
+
+
+# _______________________________ Convert csv to dataframe ___________
+def csv_to_arr(signal_uploaded_file):
+    signal_dataframe = pd.read_csv(signal_uploaded_file)
+    time = signal_dataframe['Time']
+    amplitude = signal_dataframe["Amplitude"]
+    return time, amplitude
