@@ -4,6 +4,9 @@ import numpy as np
 from math import ceil,floor
 import plotly.express as px
 import  streamlit_vertical_slider  as svs
+from scipy.fftpack import fftfreq
+import matplotlib.pyplot as plt
+
 
 st.set_page_config(page_title="Equalizer", page_icon=":headphones:",layout="wide")
 
@@ -101,12 +104,26 @@ for idx, i in enumerate(groups):
          step=1, min_value=min_value, max_value=max_value)
         if sliders[f'slider_group_{key}'] == None:
             sliders[f'slider_group_{key}']  = i[1]
-        adjusted_data.append((i[0],sliders[f'slider_group_{key}'] ))
+        adjusted_data.append((i[0],sliders[f'slider_group_{key}'] )) 
 #with st.container():
 play,pause= st.columns([0.5,5])
 with play:
     play_btn=st.button("Play")
 with pause:
     pause_btn=st.button("pause")
+def vowels():
+ if choose=="vowels" :
+    Audio= fftfreq(open_mp3())
+def music():
+ if choose=="music" :
+    Audio= fftfreq(open_mp3())
+
+def Biomedical_Signal():
+ if choose=="Biomedical_Signal" :
+    file=np.fft.fftfreq(open_csv())
+
+def Frequency():
+ if choose=="Frequency" :
+    file=np.fft.fftfreq(open_csv())
 
     
