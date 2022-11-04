@@ -1,6 +1,8 @@
 import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
+import streamlit_modal as modal
+import streamlit.components.v1 as components
 
 # ____________________________ convert two arrays to a dataframe ______________
 
@@ -30,3 +32,18 @@ def download_csv_file(par1, par2, file_name, x_axis_label, y_axis_label):
     signal_csv = signal_analysis_table.to_csv()
     st.download_button('Download CSV file', signal_csv,
                        f'signal_{file_name}.csv')
+
+
+# ________________________________ Popup window __________________________________________
+def popup_window(open_modal):
+    uplaoded_file = ""
+    if open_modal:
+        modal.open()
+    if modal.is_open():
+        with modal.container():
+            uplaoded_file = st.file_uploader(
+                'Upload CSV or Audio_file.wave/.mp3')
+            sub_btn = st.button('Submit')
+            if sub_btn:
+                if uplaoded_file:
+                    return uplaoded_file
