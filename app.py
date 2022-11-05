@@ -4,9 +4,6 @@ import numpy as np
 from math import ceil,floor
 import plotly.express as px
 import  streamlit_vertical_slider  as svs
-from scipy.fftpack import fftfreq
-import matplotlib.pyplot as plt
-
 
 st.set_page_config(page_title="Equalizer", page_icon=":headphones:",layout="wide")
 
@@ -28,7 +25,6 @@ button_style = """
         </style>
         """
 st.markdown(button_style, unsafe_allow_html=True)
-
 def plot(time,magnitude):
     figure =px.line()
     figure.add_scatter(x=time, y=magnitude,mode='lines',name='Uploaded Signal',line=dict(color='blue'))
@@ -38,6 +34,23 @@ def plot(time,magnitude):
                         xaxis_title="Time (Sec)",
                         hovermode="x")
     st.plotly_chart(figure, use_container_width=True)
+def plot_freq(frequencies,magnitudes):
+    figure =px.line()
+    figure.add_scatter(x=frequencies, y=magnitudes,mode='lines',name='Uploaded Signal',line=dict(color='blue'))
+    figure.update_layout(width=5000, height=500,
+                        template='simple_white',
+                        yaxis_title='Amplitude (V)',
+                        xaxis_title="Time (Sec)",
+                        hovermode="x")
+    st.plotly_chart(figure, use_container_width=True)
+
+def fourier_trans(magnitude=[],time=[]):
+    sample_period = time[1]-time[0]
+    n_samples = len(time)
+    fft_magnitudes=np.abs(np.fft.fft(magnitude))
+    fft_frequencies = np.fft.fftfreq(n_samples, sample_period)
+    plot_freq(fft_frequencies,fft_magnitudes)
+
 
 with st.container():
     col1, col2 = st.columns(2)
@@ -48,14 +61,14 @@ with st.container():
     
   #declare then in function function
 
-        def open_csv():
-            if upload_file:
-                signal_upload=pd.read_csv(upload_file)
-                if 'time' not in st.session_state:
-                        st.session_state['time'] = signal_upload[signal_upload.columns[0]].to_numpy()
-                if 'signal_drawn' not in st.session_state:
-                    st.session_state['signal_drawn'] = signal_upload[signal_upload.columns[1]].to_numpy()
-                plot(st.session_state['time'],st.session_state['signal_drawn'])
+def open_csv():
+    if upload_file:
+        signal_upload=pd.read_csv(upload_file)
+        time = signal_upload[signal_upload.columns[0]]
+        signal_y = signal_upload[signal_upload.columns[1]]
+        plot(time,signal_y)
+        fourier_trans( signal_y , time)
+        
 def open_mp3():
     if upload_file:
         Audio=st.audio(upload_file, format='audio/mp3')
@@ -104,26 +117,12 @@ for idx, i in enumerate(groups):
          step=1, min_value=min_value, max_value=max_value)
         if sliders[f'slider_group_{key}'] == None:
             sliders[f'slider_group_{key}']  = i[1]
-        adjusted_data.append((i[0],sliders[f'slider_group_{key}'] )) 
+        adjusted_data.append((i[0],sliders[f'slider_group_{key}'] ))
 #with st.container():
 play,pause= st.columns([0.5,5])
 with play:
     play_btn=st.button("Play")
 with pause:
     pause_btn=st.button("pause")
-def vowels():
- if choose=="vowels" :
-    Audio= fftfreq(open_mp3())
-def music():
- if choose=="music" :
-    Audio= fftfreq(open_mp3())
-
-def Biomedical_Signal():
- if choose=="Biomedical_Signal" :
-    file=np.fft.fftfreq(open_csv())
-
-def Frequency():
- if choose=="Frequency" :
-    file=np.fft.fftfreq(open_csv())
 
     
