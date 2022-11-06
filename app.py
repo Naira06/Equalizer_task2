@@ -32,7 +32,6 @@ with menu:
 
     choice = st.radio('Choose The Theme', options=[
                       'Frequency', 'Vowels', 'Musical Instrument', 'Biomedical Signal'])
-    spect_button = st.button("Show Spectrogram")
 with graph:
     if signal_uploaded_file:
         fn.wave_mp3_file_plot(signal_uploaded_file)

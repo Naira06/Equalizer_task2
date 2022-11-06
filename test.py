@@ -29,7 +29,7 @@ s_dB = lbr.amplitude_to_db(np.abs(freq_domain), ref=np.max)
 
 fig, ax = plt.subplots(figsize=(10, 5))
 img = lbd.specshow(s_dB, x_axis='time', y_axis='log', ax=ax)
-fig.colorbar(img, ax=ax, format=f'%0.2f')
+fig.colorbar(img,ax=ax,format=f'%0.2f')
 plt.show()
 
 # print(freq_domain)
