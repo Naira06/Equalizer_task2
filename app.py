@@ -64,7 +64,7 @@ def sliders(num,min,max):
                 sliders[key]  = num
     return sliders
 
-time_col,freq_col=st.columns(2,gap='small')  
+time_col,freq_col,inver_col=st.columns(3,gap='small')  
 
 def plot(time,magnitude):
     with time_col:
@@ -93,17 +93,23 @@ def plot_freq(frequencies,magnitudes):
 def fourier_trans(magnitude=[],time=[]):
     sample_period = time[1]-time[0]
     n_samples = len(time)//2
-    fft_magnitudes=np.abs(np.fft.fft(magnitude))
+    fft_magnitudes=np.abs(np.fft.rfft(magnitude))
+    f_mag=np.fft.rfft(magnitude)
     fft_frequencies = np.fft.fftfreq(n_samples, sample_period)
     plot_freq(fft_frequencies,fft_magnitudes)
-    return fft_magnitudes,fft_frequencies;
-# def inverse_f(mag=[],freq=[]):
-#     result = 1j*freq; 
-#     result += mag
-#     st.write(result)
-#     signal=np.fft.irfft(result)
-#     st.write(signal)
-#     fig2.px.line(x=)
+    return fft_magnitudes,fft_frequencies,f_mag;
+def inverse_f(mag=[],time=[]):
+    signal=np.fft.irfft(mag)
+    with inver_col:
+        fig3=px.line(x=time,y=signal)
+        fig3.update_layout(width=5000, height=500,
+                            template='simple_white',
+                            yaxis_title='Amplitude (V)',
+                            xaxis_title="Time (Sec)",
+                            hovermode="x")
+        st.plotly_chart(fig3, use_container_width=True)
+
+    
     
 
 def open_csv(slider_v):
@@ -112,11 +118,14 @@ def open_csv(slider_v):
         time = signal_upload[signal_upload.columns[0]]
         signal_y = signal_upload[signal_upload.columns[1]]
         plot(time,signal_y)
-        Mag,freq=fourier_trans( signal_y , time)
+        Mag,freq,f_mag=fourier_trans( signal_y , time)
         newarr = np.array_split(Mag,10 )
         for i in range(10):
             newarr[i]=newarr[i]*slider_v[i]
         arr = np.concatenate((newarr))  
+        with  choose_col2:
+            if st.checkbox("inverse"):
+                inverse_f(f_mag,time)
         with freq_col:
             global figure_1
             figure_1.add_trace(go.Line(x=freq,y=arr,name='Sliders_Frequency',line=dict(color='#FF0000')))
