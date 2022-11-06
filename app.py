@@ -64,7 +64,7 @@ def sliders(num,min,max):
                 sliders[key]  = num
     return sliders
 
-time_col,freq_col,upd_col=st.columns(3,gap='small')  
+time_col,freq_col=st.columns(2,gap='small')  
 
 def plot(time,magnitude):
     with time_col:
@@ -88,16 +88,23 @@ def plot_freq(frequencies,magnitudes):
                             yaxis_title='FFT Amplitude |X(freq)|)',
                             xaxis_title="Frequency (HZ)",
                             hovermode="x")
-        st.plotly_chart(figure_1, use_container_width=True)
+        
 
 def fourier_trans(magnitude=[],time=[]):
     sample_period = time[1]-time[0]
-    n_samples = len(time)
+    n_samples = len(time)//2
     fft_magnitudes=np.abs(np.fft.fft(magnitude))
     fft_frequencies = np.fft.fftfreq(n_samples, sample_period)
     plot_freq(fft_frequencies,fft_magnitudes)
     return fft_magnitudes,fft_frequencies;
-
+# def inverse_f(mag=[],freq=[]):
+#     result = 1j*freq; 
+#     result += mag
+#     st.write(result)
+#     signal=np.fft.irfft(result)
+#     st.write(signal)
+#     fig2.px.line(x=)
+    
 
 def open_csv(slider_v):
     if upload_file:
@@ -110,7 +117,7 @@ def open_csv(slider_v):
         for i in range(10):
             newarr[i]=newarr[i]*slider_v[i]
         arr = np.concatenate((newarr))  
-        with upd_col:
+        with freq_col:
             global figure_1
             figure_1.add_trace(go.Line(x=freq,y=arr,name='Sliders_Frequency',line=dict(color='#FF0000')))
             st.plotly_chart(figure_1, use_container_width=True)
@@ -138,5 +145,7 @@ elif choose =="Music" or choose =="Vowels":
         with pause:
             pause_btn=st.button("pause")
 
+
+    
 
     
