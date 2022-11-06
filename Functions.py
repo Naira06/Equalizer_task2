@@ -5,6 +5,8 @@ import streamlit_modal as modal
 import streamlit.components.v1 as components
 import plotly_express as px
 import plotly.graph_objects as go
+import numpy as np
+
 
 # ____________________________ convert two arrays to a dataframe ______________
 
@@ -15,21 +17,18 @@ def convert_to_dataframe(par1, par2, par1_name, par2_name):
         signal.append([par1[i], par2[i]])
     return pd.DataFrame(signal, columns=[f'{par1_name}', f'{par2_name}'])
 
+
 # ____________________________ plot two arrays in streamlit ______________
-
-
-def sig_plot(x_axis, y_axis, x_axis_label, y_axis_label):
+def sig_plot(x_axis=np.linspace(0, 1, 1000), y_axis=15*np.sin(0*np.pi*(np.linspace(0, 1, 1000))), x_axis_label="Time", y_axis_label="Voltage"):
     fig = go.Figure()
-
     fig.add_trace(go.Scatter(
         x=x_axis,
         y=y_axis,
     ))
-
     fig.update_layout(
         autosize=True,
         width=500,
-        height=150,
+        height=350,
         margin=dict(
             l=0,
             r=0,
@@ -37,9 +36,11 @@ def sig_plot(x_axis, y_axis, x_axis_label, y_axis_label):
             t=0,
             pad=0
         ),
-        paper_bgcolor="#fff",
+        paper_bgcolor="rgba(204,82,159,0.01)",
         xaxis_title=f"{x_axis_label}",
         yaxis_title=f"{y_axis_label}",
+        font=dict(color="white", size=12),
+        template="plotly_dark",
     )
     st.plotly_chart(fig, True)
 
