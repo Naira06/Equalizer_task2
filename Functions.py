@@ -6,6 +6,7 @@ import streamlit.components.v1 as components
 import plotly_express as px
 import plotly.graph_objects as go
 import numpy as np
+import librosa as lbr
 
 
 # ____________________________ convert two arrays to a dataframe ______________
@@ -43,6 +44,37 @@ def sig_plot(x_axis=np.linspace(0, 1, 1000), y_axis=15*np.sin(0*np.pi*(np.linspa
         template="plotly_dark",
     )
     st.plotly_chart(fig, True)
+
+
+# ____________________________ Spectrogram _____________________
+def spectrogram_plot(amp):
+    amp_forier = lbr.stft(amp)
+    S_db = lbr.amplitude_to_db(np.abs(amp_forier), ref=np.max)
+    fig, ax = plt.subplots(figsize=(10, 5))
+    img = lbr.display.specshow(S_db,
+                               x_axis='time',
+                               y_axis='log',
+                               ax=ax)
+    ax.set_title('Spectogram Example', fontsize=20)
+    fig.colorbar(img, ax=ax, format=f'%0.2f')
+    st.pyplot(fig)
+
+# ______________________________________ Plotting mp3 and wav file ______________
+
+
+def wave_mp3_file_plot(file_uploaded):
+    if file_uploaded.name.split(".")[1] == 'mp3' or file_uploaded.name.split(".")[1] == 'wav':
+        amp, sampla_rate = lbr.load(file_uploaded.name)
+        t = []
+        for i in range(len(amp)):
+            t.append(i)
+        # st.write(len(t))
+        # st.write(len(amp))
+        sig_plot(t, amp)
+        st.audio(file_uploaded.name)
+        spectrogram_plot(amp)
+    else:
+        return
 
 
 # _________________________________ Download csv file _____________________________
