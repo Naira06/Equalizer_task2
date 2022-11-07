@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import math
 import plotly.graph_objects as go
 import plotly.express as px
 import  streamlit_vertical_slider  as svs
@@ -94,10 +95,11 @@ def fourier_trans(magnitude=[],time=[]):
     sample_period = time[1]-time[0]
     n_samples = len(time)//2
     fft_magnitudes=np.abs(np.fft.rfft(magnitude))
-    f_mag=np.fft.rfft(magnitude)
+    fft_phase=np.angle(np.fft.rfft(magnitude))
+    #f_mag=np.fft.rfft(magnitude)
     fft_frequencies = np.fft.fftfreq(n_samples, sample_period)
     plot_freq(fft_frequencies,fft_magnitudes)
-    return fft_magnitudes,fft_frequencies,f_mag;
+    return fft_magnitudes,fft_frequencies,fft_phase
 def inverse_f(mag=[],time=[]):
     signal=np.fft.irfft(mag)
     with inver_col:
@@ -109,9 +111,14 @@ def inverse_f(mag=[],time=[]):
                             hovermode="x")
         st.plotly_chart(fig3, use_container_width=True)
 
-    
-    
+def rect_form(mag=[],phase=[]):
+    rect_array=[]
+    for i in range(len(mag)):
+        rect_array.append(mag[i]*(math.cos(phase[i])+math.sin(phase[i])*1j))
+        i += 1
+    return rect_array
 
+  
 def open_csv(slider_v):
     if upload_file:
         signal_upload=pd.read_csv(upload_file)
@@ -119,13 +126,15 @@ def open_csv(slider_v):
         signal_y = signal_upload[signal_upload.columns[1]]
         plot(time,signal_y)
         Mag,freq,f_mag=fourier_trans( signal_y , time)
-        newarr = np.array_split(Mag,10 )
-        for i in range(10):
+        newarr = np.array_split(Mag,4)
+        #newarr=[f_mag]
+        for i in range(4):
             newarr[i]=newarr[i]*slider_v[i]
         arr = np.concatenate((newarr))  
-        with  choose_col2:
+        with choose_col2:
             if st.checkbox("inverse"):
-                inverse_f(f_mag,time)
+                new_rec=rect_form(arr,f_mag)
+                inverse_f(new_rec,time)
         with freq_col:
             global figure_1
             figure_1.add_trace(go.Line(x=freq,y=arr,name='Sliders_Frequency',line=dict(color='#FF0000')))
