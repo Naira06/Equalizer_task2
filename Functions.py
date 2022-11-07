@@ -72,7 +72,8 @@ def wave_mp3_file_plot(file_uploaded):
         # st.write(len(amp))
         sig_plot(t, amp)
         st.audio(file_uploaded.name)
-        spectrogram_plot(amp)
+        # spectrogram_plot(amp)
+        # st.write(len(amp))
     else:
         return
 
