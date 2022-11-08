@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import math
+import librosa
 import plotly.graph_objects as go
 import plotly.express as px
 import  streamlit_vertical_slider  as svs
@@ -26,6 +27,8 @@ button_style = """
         </style>
         """
 st.markdown(button_style, unsafe_allow_html=True)
+with open("style.css") as source_des:
+    st.markdown(f"""<style>{source_des.read()}</style>""", unsafe_allow_html=True)
 with st.container():
     upload_col1, choose_col2 = st.columns(2)
     with upload_col1:
@@ -39,31 +42,32 @@ with  choose_col2:
   #declare then in function function
 
 
-def sliders(num,min,max):
-    groups = [(0,num) ,
-            (1,num),
-            (2,num),
-            (3,num),
-            (4,num),
-            (5,num),
-            (6,num),
-            (7,num),
-            (8,num),
-            (9,num)
+def sliders(num=10):
+    groups = [(0,1) ,
+            (1,1),
+            (2,1),
+            (3,1),
+            (4,1),
+            (5,1),
+            (6,1),
+            (7,1),
+            (8,1),
+            (9,1)
     ]
 
     sliders = {}
     columns = st.columns(len(groups),gap='small')
 
     for idx, i in enumerate(groups):
-        min_value =min
-        max_value = max
+        min_value =0
+        max_value = 5
         key = idx
         with columns[idx]:
-            sliders[key] = svs.vertical_slider(key=key, default_value=num,step=1, min_value=min_value, max_value=max_value)
+            sliders[key] = svs.vertical_slider(key=key, default_value=1,step=1, min_value=min_value, max_value=max_value)
             if sliders[key] == None:
-                sliders[key]  = num
-    return sliders
+                sliders[key]  = i[1]
+        if idx==num:
+            return sliders
 
 time_col,freq_col,inver_col=st.columns(3,gap='small')  
 
@@ -71,7 +75,7 @@ def plot(time,magnitude):
     with time_col:
         figure =px.line()
         figure.add_scatter(x=time, y=magnitude,mode='lines',name='Uploaded Signal',line=dict(color='blue'))
-        figure.update_layout(width=5000, height=500,
+        figure.update_layout(width=500, height=400,
                             template='simple_white',
                             yaxis_title='Amplitude (V)',
                             xaxis_title="Time (Sec)",
@@ -84,27 +88,29 @@ def plot_freq(frequencies,magnitudes):
         global figure_1
         figure_1 =px.line()
         figure_1.add_scatter(x=frequencies, y=magnitudes,mode='lines',name='Uploaded Signal',line=dict(color='blue'))
-        figure_1.update_layout(width=5000, height=500,
+        figure_1.update_layout(width=500, height=400,
                             template='simple_white',
                             yaxis_title='FFT Amplitude |X(freq)|)',
                             xaxis_title="Frequency (HZ)",
                             hovermode="x")
-        
+        st.plotly_chart(figure_1, use_container_width=True)
 
-def fourier_trans(magnitude=[],time=[]):
-    sample_period = time[1]-time[0]
-    n_samples = len(time)//2
+def fourier_trans(magnitude=[],time=[],sr=0):
+    if sr==0:
+        sample_period = time[1]-time[0]
+    else:
+        sample_period=sr
+    n_samples = len(magnitude)
     fft_magnitudes=np.abs(np.fft.rfft(magnitude))
     fft_phase=np.angle(np.fft.rfft(magnitude))
-    #f_mag=np.fft.rfft(magnitude)
-    fft_frequencies = np.fft.fftfreq(n_samples, sample_period)
+    fft_frequencies = np.fft.rfftfreq(n_samples, sample_period)
     plot_freq(fft_frequencies,fft_magnitudes)
     return fft_magnitudes,fft_frequencies,fft_phase
 def inverse_f(mag=[],time=[]):
     signal=np.fft.irfft(mag)
     with inver_col:
         fig3=px.line(x=time,y=signal)
-        fig3.update_layout(width=5000, height=500,
+        fig3.update_layout(width=500, height=400,
                             template='simple_white',
                             yaxis_title='Amplitude (V)',
                             xaxis_title="Time (Sec)",
@@ -126,9 +132,9 @@ def open_csv(slider_v):
         signal_y = signal_upload[signal_upload.columns[1]]
         plot(time,signal_y)
         Mag,freq,f_mag=fourier_trans( signal_y , time)
-        newarr = np.array_split(Mag,4)
+        newarr = np.array_split(Mag,10)
         #newarr=[f_mag]
-        for i in range(4):
+        for i in range(10):
             newarr[i]=newarr[i]*slider_v[i]
         arr = np.concatenate((newarr))  
         with choose_col2:
@@ -142,23 +148,39 @@ def open_csv(slider_v):
         
 def open_mp3():
     if upload_file:
-        Audio=st.audio(upload_file, format='audio/mp3')
-        return Audio
-
-if choose =="Sin wave" or choose =="Biomedical Signal":
+        st.audio(upload_file, format='audio/wav')
+        yf,sr=librosa.load(upload_file)
+        length = yf.shape[0] / sr
+        time = np.linspace(0., length, yf.shape[0])    
+        plot(time,yf)
+        Mag,freq,f_mag=fourier_trans(magnitude=yf,sr=sr)
+        if (st.sidebar.button("Apply")):
+            new_rec=rect_form(Mag,f_mag)
+            inverse_f(new_rec,time)
+           
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+if choose =="Sin wave" :
+    s_value=sliders(9)
+    open_csv(s_value)
+elif choose =="Biomedical Signal":
         #upload_file_plceholder.file_uploader("Browse", type=["csv"])    
         #if upload_file:
-        s_value=sliders(1,0,5)
+        s_value=sliders(3)
         open_csv(s_value)
-           
-           
-           
+                     
 elif choose =="Music" or choose =="Vowels":
         #upload_file_plceholder.file_uploader("Browse", type=["mp3"])    
         #if upload_file:
-        open_mp3()
+        
         play,pause= st.columns([0.5,5])
         with play:
             play_btn=st.button("Play")
         with pause:
             pause_btn=st.button("pause")
+        if choose =="Music":
+         s_value=sliders(3)
+         open_mp3() 
+        if choose =="Vowels":
+            s_value=sliders(9)
+            open_mp3(s_value)
+
