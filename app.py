@@ -146,7 +146,7 @@ def open_csv(slider_v):
             figure_1.add_trace(go.Line(x=freq,y=arr,name='Sliders_Frequency',line=dict(color='#FF0000')))
             st.plotly_chart(figure_1, use_container_width=True)
         
-def open_mp3():
+def open_mp3(slider_v):
     if upload_file:
         with choose_col2:
             st.audio(upload_file, format='audio/wav')
@@ -184,7 +184,7 @@ elif choose =="Music" or choose =="Vowels":
             pause_btn=st.button("⏸️")
         if choose =="Music":
          s_value=sliders(3)
-         open_mp3() 
+         open_mp3(s_value) 
         if choose =="Vowels":
             s_value=sliders(9)
             open_mp3(s_value)
