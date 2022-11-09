@@ -30,7 +30,7 @@ st.markdown(button_style, unsafe_allow_html=True)
 with open("style.css") as source_des:
     st.markdown(f"""<style>{source_des.read()}</style>""", unsafe_allow_html=True)
 with st.container():
-    upload_col1, choose_col2 = st.columns(2)
+    upload_col1, choose_col2 = st.columns([1,3])
     with upload_col1:
         # upload_file_plceholder=st.empty()
         # upload_file=upload_file_plceholder.file_uploader("Browse", type=["csv"], key="uploader")   
@@ -93,7 +93,7 @@ def plot_freq(frequencies,magnitudes):
                             yaxis_title='FFT Amplitude |X(freq)|)',
                             xaxis_title="Frequency (HZ)",
                             hovermode="x")
-        st.plotly_chart(figure_1, use_container_width=True)
+        #st.plotly_chart(figure_1, use_container_width=True)
 
 def fourier_trans(magnitude=[],time=[],sr=0):
     if sr==0:
@@ -148,12 +148,17 @@ def open_csv(slider_v):
         
 def open_mp3():
     if upload_file:
-        st.audio(upload_file, format='audio/wav')
+        with choose_col2:
+            st.audio(upload_file, format='audio/wav')
         yf,sr=librosa.load(upload_file)
         length = yf.shape[0] / sr
         time = np.linspace(0., length, yf.shape[0])    
         plot(time,yf)
         Mag,freq,f_mag=fourier_trans(magnitude=yf,sr=sr)
+        with freq_col:
+            global figure_1
+            figure_1.add_trace(go.Line(x=freq,y=Mag,name='Sliders_Frequency',line=dict(color='#FF0000')))
+            st.plotly_chart(figure_1, use_container_width=True)
         if (st.sidebar.button("Apply")):
             new_rec=rect_form(Mag,f_mag)
             inverse_f(new_rec,time)
@@ -174,13 +179,15 @@ elif choose =="Music" or choose =="Vowels":
         
         play,pause= st.columns([0.5,5])
         with play:
-            play_btn=st.button("Play")
+            play_btn=st.button("▶️,⏭️,⏮️")
         with pause:
-            pause_btn=st.button("pause")
+            pause_btn=st.button("⏸️")
         if choose =="Music":
          s_value=sliders(3)
          open_mp3() 
         if choose =="Vowels":
             s_value=sliders(9)
             open_mp3(s_value)
+
+
 
