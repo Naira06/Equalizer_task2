@@ -6,6 +6,7 @@ import librosa
 import plotly.graph_objects as go
 import plotly.express as px
 import  streamlit_vertical_slider  as svs
+from scipy.io.wavfile import write
 
 st.set_page_config(page_title="Equalizer", page_icon=":headphones:",layout="wide")
 
@@ -116,6 +117,7 @@ def inverse_f(mag=[],time=[]):
                             xaxis_title="Time (Sec)",
                             hovermode="x")
         st.plotly_chart(fig3, use_container_width=True)
+    return signal    
 
 def rect_form(mag=[],phase=[]):
     rect_array=[]
@@ -146,7 +148,7 @@ def open_csv(slider_v):
             figure_1.add_trace(go.Line(x=freq,y=arr,name='Sliders_Frequency',line=dict(color='#FF0000')))
             st.plotly_chart(figure_1, use_container_width=True)
         
-def open_mp3(slider_v):
+def open_mp3( s_value):
     if upload_file:
         with choose_col2:
             st.audio(upload_file, format='audio/wav')
@@ -161,8 +163,14 @@ def open_mp3(slider_v):
             st.plotly_chart(figure_1, use_container_width=True)
         if (st.sidebar.button("Apply")):
             new_rec=rect_form(Mag,f_mag)
-            inverse_f(new_rec,time)
-           
+            data=inverse_f(new_rec,time)
+            norm=np.int16(data*(32767/data.max()))
+            #first method
+            write('Edited_audio.wav' , round(sr ), norm)
+            st.sidebar.audio('Edited_audio.wav' , format= 'audio/wav')
+            # second method
+            #write("Edited_audio.wav",sr,data.astype(np.int16))   
+            #st.sidebar.audio('Edited_audio.wav' , format= 'audio/wav')  
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 if choose =="Sin wave" :
     s_value=sliders(9)
@@ -188,6 +196,8 @@ elif choose =="Music" or choose =="Vowels":
         if choose =="Vowels":
             s_value=sliders(9)
             open_mp3(s_value)
+
+
 
 
 
