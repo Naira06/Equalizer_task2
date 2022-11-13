@@ -1,0 +1,67 @@
+.css-ocqkz7 {
+    gap: 0rem;
+}
+
+.css-18e3th9 {
+    padding: 0rem 1rem 10rem;
+      padding-right: 1rem;
+      padding-left: 1rem;
+  
+  }
+.css-1mhtumg {
+    gap: 0.1 rem;
+}
+
+.css-1jlxiqx {
+    gap: 0.1 rem;
+  }
+.css-1vq4p4l {
+    padding: 0.5rem 1rem 1.5rem;
+  }
+.css-211ry6 {
+    gap: 0.1 rem;
+  }
+.css-1k4rw0e {
+    gap: 0.1 rem;
+  }
+.css-1ndo8v5 {
+    gap: 0.1 rem;
+  }
+  /* main */
+.css-k1vhr4{
+    background-image: linear-gradient(180deg,#add0f0 0,#2a3987 100%);
+   
+  }
+  /* sidebar */
+.css-163ttbj {
+    position: relative;
+    top: 2px;
+    background-color: rgb(111, 127, 159);
+    z-index: 999991;
+    min-width: 244px;
+    max-width: 550px;
+    transform: none;
+    transition: transform 300ms ease 0s, min-width 300ms ease 0s, max-width 300ms ease 0s;
+    background-image:  linear-gradient(180deg,#5b8bb7 0,#0b185e 100%);
+  }
+ /* brows file */
+.css-1dhfpht {
+    display: flex;
+    -moz-box-align: center;
+    align-items: center;
+    padding: 1rem;
+    background-color: #8189b2;
+  }
+.css-1dhfpht:hover{
+    border-color: rgb(35, 32, 32);
+    color: rgb(11, 55, 94);;
+
+  }
+ /* brows button */
+.css-629wbf:hover {
+    border-color: rgb(35, 32, 32);
+    color: rgb(11, 55, 94);;
+  }
+.css-629wbf {
+    background-color: transparent;
+  }
