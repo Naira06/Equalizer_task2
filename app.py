@@ -27,6 +27,8 @@ button_style = """
         .stButton > button {
             width: 90px;
             height: 35px;
+            border: 1px solid transparent;
+
         }
         </style>
         """
@@ -46,7 +48,7 @@ st.write(
     '<style>div.st-bf{flex-direction:column;} div.st-ag{font-weight:bold;padding-left:2px;}</style>', unsafe_allow_html=True)
 choose = st.radio("", ("Sin wave", "Music", "Vowels", "Biomedical Signal"))
 # declare then in function function
-inver_btn = st.sidebar.checkbox("Apply")
+
 
 
 def sliders(num=9):
@@ -96,6 +98,7 @@ def plot(time, magnitude):
                          xaxis_title="Time (Sec)",
                          hovermode="x")
     st.plotly_chart(figure, use_container_width=True)
+    
 
 
 def plt_spectrogram(signal, fs):
@@ -131,6 +134,7 @@ def rect_form(mag=[], phase=[]):
 
 def open_csv(slider_v):
     if upload_file:
+        inver_btn = st.sidebar.checkbox("Apply")
         signal_upload = pd.read_csv(upload_file)
         time = signal_upload[signal_upload.columns[0]]
         signal_y = signal_upload[signal_upload.columns[1]]
