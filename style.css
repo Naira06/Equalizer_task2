@@ -27,6 +27,9 @@
 .css-1ndo8v5 {
     gap: 0.1 rem;
   }
+  .css-x1naag {
+    gap: 0rem;
+  }
   /* main */
 .css-k1vhr4{
     background-image: linear-gradient(180deg,#add0f0 0,#2a3987 100%);
@@ -63,5 +66,44 @@
     color: rgb(11, 55, 94);;
   }
 .css-629wbf {
+    background-color: transparent;
+  }
+.bk-root{
+  --primary-color: #ff4b4b;
+  --background-color: transparent;
+  --secondary-background-color: transparent;
+  --text-color: #31333F;
+  --font: "Source Sans Pro", sans-serif;
+  }
+  .css-fg4pbf {
+    color: rgb(1, 1, 1);
+  }
+  .css-fg4pbf {
+    color: rgb(255, 255, 255);
+  }
+  .css-81oif8 {
+    font-size: 14px;
+    color: rgb(49, 51, 63);
+    display: flex;
+    visibility: visible;
+    margin-bottom: 0rem;
+    height: auto;
+    min-height: 0 rem;
+  }
+  .css-1a2c2p7 {
+    gap: 0rem;
+  }
+  css-1jae3nz {
+    gap: 0rem;
+  }
+  /* edge of sliders */
+  .css-ytkq5y {
+    background-image: transparent;
+  }
+  .css-16xe123 {
+    gap: 0rem;
+  }
+  div.element-container.css-1c426lu.e1tzin5v3{
+    bottom: 0%;
     background-color: transparent;
   }
