@@ -9,7 +9,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 import streamlit_vertical_slider as svs
 from scipy.io.wavfile import write
-
+from scipy.io import wavfile
+from scipy.fft import rfft, rfftfreq, irfft
 st.set_page_config(page_title="Equalizer",
                    page_icon=":headphones:", layout="wide")
 
@@ -50,7 +51,6 @@ choose = st.radio("", ("Sin wave", "Music", "Vowels", "Biomedical Signal"))
 # declare then in function function
 
 
-
 def sliders(num=9):
     groups = [(0, 1),
               (1, 1),
@@ -85,7 +85,7 @@ def sliders(num=9):
             return sliders
 
 
-time_col,inver_col = st.columns(2, gap='small')
+time_col, inver_col = st.columns(2, gap='small')
 
 
 def plot(time, magnitude):
@@ -98,7 +98,6 @@ def plot(time, magnitude):
                          xaxis_title="Time (Sec)",
                          hovermode="x")
     st.plotly_chart(figure, use_container_width=True)
-    
 
 
 def plt_spectrogram(signal, fs):
@@ -106,6 +105,7 @@ def plt_spectrogram(signal, fs):
     plt.specgram(signal, Fs=fs)
     plt.colorbar()
     st.pyplot(fig2)
+
 
 def fourier_trans(magnitude=[], time=[], sr=0):
     if sr == 0:
@@ -146,12 +146,12 @@ def open_csv(slider_v):
                 plt_spectrogram(signal_y, 2)
         Mag, freq, f_mag = fourier_trans(signal_y, time)
         if choose == "Sin wave":
-        #     min_frequency_value = int(len(freq)/10)
-        #     columns = st.columns(10)
-        #     for i in range(0, 10):
-        #         with columns[i]:
-        #             frequency_val = (i)*min_frequency_value
-        #             st.write(f"  { frequency_val } HZ ")
+            #     min_frequency_value = int(len(freq)/10)
+            #     columns = st.columns(10)
+            #     for i in range(0, 10):
+            #         with columns[i]:
+            #             frequency_val = (i)*min_frequency_value
+            #             st.write(f"  { frequency_val } HZ ")
             newarr = np.array_split(Mag, 10)
             for i in range(10):
                 newarr[i] = newarr[i]*slider_v[i]
@@ -163,7 +163,7 @@ def open_csv(slider_v):
                         new_s = inverse_f(new_rec, time)
                         plot(time, new_s)
                         if (st.sidebar.checkbox("output spectro")):
-                            plt_spectrogram(new_s,2)
+                            plt_spectrogram(new_s, 2)
         elif choose == "Biomedical Signal":
             Bradycardia = slider_v[0]
             normal_range = slider_v[1]
@@ -181,26 +181,47 @@ def open_csv(slider_v):
                 with inver_col:
                     plot(time, new_si)
                     if (st.sidebar.checkbox("output spectro")):
-                        plt_spectrogram(new_si,2)
+                        plt_spectrogram(new_si, 2)
 
 
 def open_mp3(s_value):
     if upload_file:
         with choose_col2:
             st.audio(upload_file, format='audio/wav')
-        yf, sr = librosa.load(upload_file)
-        length = yf.shape[0] / sr
-        time = np.linspace(0., length, yf.shape[0])
-        with time_col:
-            plot(time, yf)
-            if (st.sidebar.checkbox("spectro")):
-                plt_spectrogram(yf.sr)
-        Mag, freq, f_mag = fourier_trans(magnitude=yf, sr=sr)
+        if choose == "Music":
+            yf, sr = librosa.load(upload_file)
+            length = yf.shape[0] / sr
+            time = np.linspace(0., length, yf.shape[0])
+            with time_col:
+                plot(time, yf)
+                if (st.sidebar.checkbox("spectro")):
+                    plt_spectrogram(yf.sr)
+            Mag, freq, f_mag = fourier_trans(magnitude=yf, sr=sr)
+        elif choose == "Vowels":
+            sr, yf = wavfile.read(upload_file)
+            Mag = rfft(yf)
+            freq = rfftfreq(len(yf), 1/sr)
+            y2 = Mag[0:len(freq)]
+            condition = ((freq > 500) & (freq < 1050))  # Letter A
+            y2[condition] = y2[condition]*s_value[0]
+
+            condition = ((freq > 1100) & (freq < 2000))  # Letter B
+            y2[condition] = y2[condition]*s_value[1]
+
+            condition = ((freq > 3000) & (freq < 4000))  # Letter D
+            y2[condition] = y2[condition]*s_value[2]
+
+            condition = ((freq > 5800) & (freq < 7000))  # Letter G
+            y2[condition] = y2[condition]*s_value[3]
+            y2 = irfft(y2)
         if (st.sidebar.button("Apply")):
-            new_rec = rect_form(Mag, f_mag)
-            data = inverse_f(new_rec, time)
-            norm = np.int16(data*(32767/data.max()))
-            write('Edited_audio.wav', round(sr), norm)
+            if choose == "Music":
+                new_rec = rect_form(Mag, f_mag)
+                data = inverse_f(new_rec, time)
+                norm = np.int16(data*(32767/data.max()))
+                write('Edited_audio.wav', round(sr), norm)
+            else:
+                write('Edited_audio.wav', sr, y2.astype(np.int16))
             st.sidebar.audio('Edited_audio.wav', format='audio/wav')
             # write("Edited_audio.wav",sr,data.astype(np.int16))
             #st.sidebar.audio('Edited_audio.wav' , format= 'audio/wav')
@@ -230,11 +251,5 @@ elif choose == "Music" or choose == "Vowels":
         s_value = sliders(3)
         open_mp3(s_value)
     if choose == "Vowels":
-        s_value = sliders(9)
+        s_value = sliders(3)
         open_mp3(s_value)
-
-
-
-
-
-
