@@ -14,7 +14,6 @@ from scipy.fft import rfft, rfftfreq, irfft
 st.set_page_config(page_title="Equalizer",
                    page_icon=":headphones:", layout="wide")
 
-
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
@@ -34,6 +33,7 @@ button_style = """
         </style>
         """
 st.markdown(button_style, unsafe_allow_html=True)
+# do/cument.getElemenTbyId("root").contentWindow.document.body.style.background="blue";
 with open("style.css") as source_des:
     st.markdown(f"""<style>{source_des.read()}</style>""",
                 unsafe_allow_html=True)
@@ -58,7 +58,7 @@ def sliders(no_col,writes=[]):
     for column  in columns:
         with column:
             slider = svs.vertical_slider(key=f"slider{columns.index(column)}",default_value=1,step=0.5,min_value=0,max_value=10,
-                                        thumb_color="black", slider_color="red", track_color="grey")
+                                        thumb_color="black", slider_color="black", track_color="grey")
             if slider == None:
                 slider  = 1 
             sliders.append(slider) 
@@ -75,18 +75,21 @@ time_col, inver_col = st.columns(2, gap='small')
 def plot(time, magnitude):
     figure = px.line()
     figure.add_scatter(x=time, y=magnitude, mode='lines',
-                       name='Uploaded Signal', line=dict(color='blue'))
+                       name='Uploaded Signal', line=dict(color='black'))
     figure.update_layout(width=500, height=300,
-                         template='simple_white',
+                        paper_bgcolor='rgb(0,0,0,0)',
+                        plot_bgcolor='rgb(0,0,0,0)',
                          yaxis_title='Amplitude (mV)',
                          xaxis_title="Time (Sec)",
-                         hovermode="x")
+                         hovermode="x"
+                         )
     st.plotly_chart(figure, use_container_width=True)
 
 
 def plt_spectrogram(signal, fs):
     fig2 = plt.figure(figsize=(20, 4))
     plt.specgram(signal, Fs=fs,cmap="jet")
+    fig2.savefig('spec',transparent=True)
     plt.colorbar()
     st.pyplot(fig2)
 
@@ -172,7 +175,7 @@ def open_csv(slider_v):
 def open_mp3(s_value):
     if upload_file:
         with choose_col2:
-            st.audio(upload_file, format='audio/wav')
+            st.sidebar.audio(upload_file, format='audio/wav')
         if choose == "Music":
             length = yf.shape[0] / sr
             time = np.linspace(0., length, yf.shape[0])
@@ -183,14 +186,15 @@ def open_mp3(s_value):
             Mag, freq, f_mag,full_mag = fourier_trans(magnitude=yf, sr=sr)
         elif choose == "Vowels":
             sr, yf = wavfile.read(upload_file)
+            yf1=np.ravel(yf)
             Mag, freq, f_mag,full_mag = fourier_trans(magnitude=yf, sr=sr)
-            # with time_col:
-            #     length = yf.shape[0] / sr
-            #     time = np.linspace(0., length, yf.shape[0])
-            #     plot(time, yf)
-                
-            # Mag = np.fft.rfft(yf)
-            # freq = np.fft.rfftfreq(len(yf), 1/sr)
+            with time_col:
+                length =  yf1.shape[0] / sr
+                time = np.linspace(0., length,  yf1.shape[0])
+                plot(time,  yf1)
+                if (st.sidebar.checkbox("Input spectro")):
+                   with time_col:
+                    plt_spectrogram(yf1, sr)
             y2 = full_mag[0:len(freq)]
             condition = ((freq > 500) & (freq < 1050))  # Letter A
             y2[condition] = y2[condition]*s_value[0]
@@ -204,13 +208,19 @@ def open_mp3(s_value):
             condition = ((freq > 5800) & (freq < 7000))  # Letter G
             y2[condition] = y2[condition]*s_value[3]
             y2 = inverse_f(y2)
-        if (st.sidebar.button("Apply")):
+            y2_id=np.ravel(y2)
+        if (st.sidebar.checkbox("Apply")):
             if choose == "Music":
                 new_rec = rect_form(Mag, f_mag)
                 data = inverse_f(new_rec)
                 norm = np.int16(data*(32767/data.max()))
                 write('Edited_audio.wav', round(sr), norm)
             else:
+                with inver_col:
+                    plot(time, y2_id)
+                    if (st.sidebar.checkbox("output spectro")):
+                     with inver_col:
+                      plt_spectrogram( y2_id, sr)
                 write('Edited_audio.wav', sr, y2.astype(np.int16))
             st.sidebar.audio('Edited_audio.wav', format='audio/wav')
 
