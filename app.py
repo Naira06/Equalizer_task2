@@ -1,16 +1,18 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
 import math
 import altair as alt
 import librosa
+import librosa.display
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
+import numpy as np
+import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
 import streamlit_vertical_slider as svs
-from scipy.io.wavfile import write
+from scipy.fft import irfft, rfft, rfftfreq
 from scipy.io import wavfile
-from scipy.fft import rfft, rfftfreq, irfft
+from scipy.io.wavfile import write
+
 st.set_page_config(page_title="Equalizer",
                    page_icon=":headphones:", layout="wide")
 
@@ -47,7 +49,7 @@ st.write(
     '<style>div.row-widget.stRadio > div{flex-direction:row;justify-content: center;} </style>', unsafe_allow_html=True)
 st.write(
     '<style>div.st-bf{flex-direction:column;} div.st-ag{font-weight:bold;padding-left:2px;}</style>', unsafe_allow_html=True)
-choose = st.radio("", ("Sin wave", "Music", "Vowels", "Biomedical Signal"))
+choose = st.radio("", ("Sin wave", "Music", "Vowels", "Biomedical Signal","change pitch"))
 # declare then in function function
 
 
@@ -77,20 +79,21 @@ def plot(time, magnitude):
     figure.add_scatter(x=time, y=magnitude, mode='lines',
                        name='Uploaded Signal', line=dict(color='black'))
     figure.update_layout(width=500, height=300,
-                        paper_bgcolor='rgb(0,0,0,0)',
-                        plot_bgcolor='rgb(0,0,0,0)',
                          yaxis_title='Amplitude (mV)',
                          xaxis_title="Time (Sec)",
                          hovermode="x"
                          )
+                        #  paper_bgcolor='rgb(0,0,0,0)',
+                        # plot_bgcolor='rgb(0,0,0,0)',
     st.plotly_chart(figure, use_container_width=True)
 
 
 def plt_spectrogram(signal, fs):
     fig2 = plt.figure(figsize=(20, 4))
-    plt.specgram(signal, Fs=fs,cmap="jet")
-    fig2.savefig('spec',transparent=True)
+    plt.specgram(signal[0:98], Fs=fs,cmap="jet")
+    fig2.savefig('spec')
     plt.colorbar()
+    # ',transparent=True
     st.pyplot(fig2)
 
 
@@ -158,14 +161,13 @@ def open_csv(slider_v):
             atrial_tachycardia = slider_v[2]
             Atrial_flutter = slider_v[3]
             Atrial_Fibrillation = slider_v[4]
-            Mag[0:60] *= Bradycardia
-            Mag[60:90] *= normal_range
-            Mag[90:250] *= atrial_tachycardia
-            Mag[250:300] *= Atrial_flutter
-            Mag[300:] *= Atrial_Fibrillation
+            full_mag[0:60] *= Bradycardia
+            full_mag[60:90] *= normal_range
+            full_mag[90:250] *= atrial_tachycardia
+            full_mag[250:300] *= Atrial_flutter
+            full_mag[300:] *= Atrial_Fibrillation
             if inver_btn:
-                new_re = rect_form(Mag, f_mag)
-                new_si = inverse_f(new_re)
+                new_si = inverse_f(full_mag)
                 with inver_col:
                     plot(time, new_si)
                     if (st.sidebar.checkbox("output spectro")):
@@ -174,16 +176,33 @@ def open_csv(slider_v):
 
 def open_mp3(s_value):
     if upload_file:
-        with choose_col2:
-            st.sidebar.audio(upload_file, format='audio/wav')
-        if choose == "Music":
-            length = yf.shape[0] / sr
-            time = np.linspace(0., length, yf.shape[0])
+        if choose=="change pitch":
+            signal_y,sr=librosa.load(upload_file)
+            length = signal_y.shape[0] / sr
+            time = np.linspace(0., length,  signal_y.shape[0])
             with time_col:
-                plot(time, yf)
-                if (st.sidebar.checkbox("spectro")):
-                    plt_spectrogram(yf.sr)
-            Mag, freq, f_mag,full_mag = fourier_trans(magnitude=yf, sr=sr)
+                plot(time,signal_y)
+                if st.sidebar.checkbox("normal spectrogram"):
+                   plt_spectrogram(signal_y,sr)
+                st.audio(upload_file, format='audio/wav')
+            pitch=st.sidebar.slider("Frequency of the added signal", min_value=-20,max_value=20)
+            final_s=librosa.effects.pitch_shift(signal_y,sr=sr,n_steps=pitch)
+            if st.sidebar.checkbox("Apply_ed"):
+                with inver_col:
+                    plot(time,  final_s)
+                    if st.sidebar.checkbox("edit spectrogram"):
+                     plt_spectrogram(final_s,sr)
+                    norm=np.int16((final_s)*(32767/final_s.max()))
+                    write('Edited_audio.wav' , round(sr ), norm)
+                    st.audio('Edited_audio.wav', format='audio/wav')
+
+            # length = yf.shape[0] / sr
+            # time = np.linspace(0., length, yf.shape[0])
+            # with time_col:
+            #     plot(time, yf)
+            #     if (st.sidebar.checkbox("spectro")):
+            #         plt_spectrogram(yf.sr)
+            # Mag, freq, f_mag,full_mag = fourier_trans(magnitude=yf, sr=sr)
         elif choose == "Vowels":
             sr, yf = wavfile.read(upload_file)
             yf1=np.ravel(yf)
@@ -221,8 +240,8 @@ def open_mp3(s_value):
                     if (st.sidebar.checkbox("output spectro")):
                      with inver_col:
                       plt_spectrogram( y2_id, sr)
-                write('Edited_audio.wav', sr, y2.astype(np.int16))
-            st.sidebar.audio('Edited_audio.wav', format='audio/wav')
+                      write('Edited_audio.wav', sr, y2.astype(np.int16))
+                     st.sidebar.audio('Edited_audio.wav', format='audio/wav')
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -236,7 +255,7 @@ elif choose == "Biomedical Signal":
     s_value = sliders(no_col=5,writes=writes)
     open_csv(s_value)
 
-elif choose == "Music" or choose == "Vowels":
+elif choose == "Music" or choose == "Vowels"or choose =="change pitch":
     #upload_file_plceholder.file_uploader("Browse", type=["mp3"])
     # if upload_file:
 
@@ -252,4 +271,7 @@ elif choose == "Music" or choose == "Vowels":
     if choose == "Vowels":
         vowels=[" Letter A "," Letter B "," Letter D "," Letter G "]
         s_value = sliders(4,writes=vowels)
+        open_mp3(s_value)
+    if choose=="change pitch":
+        s_value=0
         open_mp3(s_value)
