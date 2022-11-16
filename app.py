@@ -32,7 +32,6 @@ button_style = """
             width: 90px;
             height: 35px;
             border: 1px solid transparent;
-
         }
         </style>
         """
@@ -92,7 +91,9 @@ def plot(time, magnitude):
 
 def plt_spectrogram(signal, fs):
     fig2 = plt.figure(figsize=(20, 4))
-    plt.specgram(signal[0:98], Fs=fs,cmap="jet")
+    plt.specgram(signal, Fs=fs,cmap="jet")
+    plt.xlabel('time [sec]')
+    plt.ylabel('Frequency [HZ]')
     fig2.savefig('spec')
     plt.colorbar()
     # ',transparent=True
@@ -101,13 +102,14 @@ def plt_spectrogram(signal, fs):
 
 
 def fourier_trans(magnitude=[], time=[], sr=0):
+    n_samples = len(magnitude)
     if sr == 0:
         sample_period = time[1]-time[0]
+        duration=0
     else:
-        timeperiod=1/sr
-        duration = n_samples*timeperiod
+        sample_period=1/sr
+        duration = n_samples*sample_period
         n_samples=round(sr*duration)
-    n_samples = len(magnitude)
     full_mag=np.fft.rfft(magnitude)
     fft_magnitudes = np.abs(full_mag)
     fft_phase = np.angle(full_mag)
@@ -127,7 +129,7 @@ def rect_form(mag=[], phase=[]):
         i += 1
     return rect_array
 
-def get_notes():   
+def getnotes():   
     # White keys are in Uppercase and black keys (sharps) are in lowercase
     octave = ['C', 'c', 'D', 'd', 'E', 'F', 'f', 'G', 'g', 'A', 'a', 'B'] 
     base_freq = 440 #Frequency of Note A4
@@ -148,13 +150,13 @@ def open_csv(slider_v):
         signal_upload = pd.read_csv(upload_file)
         time = signal_upload[signal_upload.columns[0]]
         signal_y = signal_upload[signal_upload.columns[1]]
-
+        Mag, freq, f_mag,full_mag,duration = fourier_trans(signal_y, time)
         with time_col:
             plot(time, signal_y)
         if (st.sidebar.checkbox("Input spectro")):
             with time_col:
                 plt_spectrogram(signal_y, 2)
-        Mag, freq, f_mag,full_mag = fourier_trans(signal_y, time)
+        
         if choose == "Sin wave":
             min_frequency_value = int(len(freq)/10)
             columns = st.columns(10)
@@ -195,16 +197,25 @@ def open_csv(slider_v):
 
 def open_mp3(s_value):
     if upload_file:
-        if choose=="music":
+        if choose=="Music":
             sr, yf = wavfile.read(upload_file)
             Mag, freq, f_mag,full_mag ,duration= fourier_trans(magnitude=yf, sr=sr)
-            p_notes=get_notes()
+            with time_col:
+                yf1=np.ravel(yf)
+                length = yf1.shape[0] / sr
+                time = np.linspace(0., length,  yf1.shape[0])
+                plot(time,yf1)
+                if st.sidebar.checkbox("normal spectrogram"):
+                   plt_spectrogram(yf1,sr)
+                st.audio(upload_file, format='audio/wav')
+            p_notes=getnotes()
             st.write(p_notes)
-            full_mag[int(duration*p_notes.get("G2"))   :int(duration* p_notes.get("C8"))] *= sliders[0]    #drums
+            m_signal=full_mag
+            m_signal[int(duration*p_notes.get("G2")) :int(duration* p_notes.get("C8"))] *= sliders[0]    #drums
     
-            full_mag[int(duration*0)   :int(duration* 450)] *= sliders[3]  #piano
+            m_signal[int(duration*0)  :int(duration* 450)] *= sliders[3]  #piano
          
-            full_mag[int(duration*p_notes.get("C1"))   :int(duration* p_notes.get("G7"))] *= sliders[2]   #guitar
+            m_signal[int(duration*p_notes.get("C1")) :int(duration* p_notes.get("G7"))] *= sliders[2]   #guitar
                 
         elif choose=="change pitch":
             signal_y,sr=librosa.load(upload_file)
@@ -225,14 +236,6 @@ def open_mp3(s_value):
                     norm=np.int16((final_s)*(32767/final_s.max()))
                     write('Edited_audio.wav' , round(sr ), norm)
                     st.audio('Edited_audio.wav', format='audio/wav')
-
-            # length = yf.shape[0] / sr
-            # time = np.linspace(0., length, yf.shape[0])
-            # with time_col:
-            #     plot(time, yf)
-            #     if (st.sidebar.checkbox("spectro")):
-            #         plt_spectrogram(yf.sr)
-            # Mag, freq, f_mag,full_mag = fourier_trans(magnitude=yf, sr=sr)
         elif choose == "Vowels":
             sr, yf = wavfile.read(upload_file)
             yf1=np.ravel(yf)
@@ -258,13 +261,13 @@ def open_mp3(s_value):
             y2[condition] = y2[condition]*s_value[3]
             y2 = inverse_f(y2)
             y2_id=np.ravel(y2)
-
-
         if (st.sidebar.checkbox("Apply")):
             if choose == "Music":
-                data = inverse_f(full_mag)
-                norm = np.int16(data*(32767/data.max()))
-                write('Edited_audio.wav', round(sr), norm)
+                with inver_col:
+                    data = inverse_f(m_signal)
+                    norm = np.int16(data*(32767/data.max()))
+                    write('Edited_audio.wav', round(sr), norm)
+                    st.sidebar.audio('Edited_audio.wav', format='audio/wav')
             else:
                 with inver_col:
                     plot(time, y2_id)
@@ -296,7 +299,7 @@ elif choose == "Music" or choose == "Vowels"or choose =="change pitch":
    # with pause:
         #pause_btn = st.button("⏸️")
     if choose == "Music":
-        vowels=[" drums "," piano "," juitar "]
+        vowels=[" drums "," piano "," guitar "]
         s_value = sliders(3,writes=vowels)
         open_mp3(s_value)
     if choose == "Vowels":
