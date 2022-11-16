@@ -1,4 +1,5 @@
 import math
+from signal import signal
 import altair as alt
 import librosa
 import librosa.display
@@ -7,6 +8,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from sklearn.preprocessing import power_transform
 import streamlit as st
 import streamlit_vertical_slider as svs
 from scipy.fft import irfft, rfft, rfftfreq
@@ -97,17 +99,20 @@ def plt_spectrogram(signal, fs):
     st.pyplot(fig2)
 
 
+
 def fourier_trans(magnitude=[], time=[], sr=0):
     if sr == 0:
         sample_period = time[1]-time[0]
     else:
-        sample_period = 1/sr
+        timeperiod=1/sr
+        duration = n_samples*timeperiod
+        n_samples=round(sr*duration)
     n_samples = len(magnitude)
     full_mag=np.fft.rfft(magnitude)
     fft_magnitudes = np.abs(full_mag)
     fft_phase = np.angle(full_mag)
     fft_frequencies = np.fft.rfftfreq(n_samples, sample_period)
-    return fft_magnitudes, fft_frequencies, fft_phase,full_mag
+    return fft_magnitudes, fft_frequencies, fft_phase,full_mag,duration
 
 
 def inverse_f(mag=[]):
@@ -121,6 +126,20 @@ def rect_form(mag=[], phase=[]):
         rect_array.append(mag[i]*(math.cos(phase[i])+math.sin(phase[i])*1j))
         i += 1
     return rect_array
+
+def get_notes():   
+    # White keys are in Uppercase and black keys (sharps) are in lowercase
+    octave = ['C', 'c', 'D', 'd', 'E', 'F', 'f', 'G', 'g', 'A', 'a', 'B'] 
+    base_freq = 440 #Frequency of Note A4
+    keys = np.array([x+str(y) for y in range(0,9) for x in octave])
+    # Trim to standard 88 keys
+    start = np.where(keys == 'A0')[0][0]
+    end = np.where(keys == 'C8')[0][0]
+    keys = keys[start:end+1]
+    
+    note_freqs = dict(zip(keys, [2**((n+1-49)/12)*base_freq for n in range(len(keys))]))
+    note_freqs[''] = 0.0 # stop
+    return note_freqs
 
 
 def open_csv(slider_v):
@@ -176,7 +195,18 @@ def open_csv(slider_v):
 
 def open_mp3(s_value):
     if upload_file:
-        if choose=="change pitch":
+        if choose=="music":
+            sr, yf = wavfile.read(upload_file)
+            Mag, freq, f_mag,full_mag ,duration= fourier_trans(magnitude=yf, sr=sr)
+            p_notes=get_notes()
+            st.write(p_notes)
+            full_mag[int(duration*p_notes.get("G2"))   :int(duration* p_notes.get("C8"))] *= sliders[0]    #drums
+    
+            full_mag[int(duration*0)   :int(duration* 450)] *= sliders[3]  #piano
+         
+            full_mag[int(duration*p_notes.get("C1"))   :int(duration* p_notes.get("G7"))] *= sliders[2]   #guitar
+                
+        elif choose=="change pitch":
             signal_y,sr=librosa.load(upload_file)
             length = signal_y.shape[0] / sr
             time = np.linspace(0., length,  signal_y.shape[0])
@@ -206,7 +236,7 @@ def open_mp3(s_value):
         elif choose == "Vowels":
             sr, yf = wavfile.read(upload_file)
             yf1=np.ravel(yf)
-            Mag, freq, f_mag,full_mag = fourier_trans(magnitude=yf, sr=sr)
+            Mag, freq, f_mag,full_mag,duration = fourier_trans(magnitude=yf, sr=sr)
             with time_col:
                 length =  yf1.shape[0] / sr
                 time = np.linspace(0., length,  yf1.shape[0])
@@ -228,10 +258,11 @@ def open_mp3(s_value):
             y2[condition] = y2[condition]*s_value[3]
             y2 = inverse_f(y2)
             y2_id=np.ravel(y2)
+
+
         if (st.sidebar.checkbox("Apply")):
             if choose == "Music":
-                new_rec = rect_form(Mag, f_mag)
-                data = inverse_f(new_rec)
+                data = inverse_f(full_mag)
                 norm = np.int16(data*(32767/data.max()))
                 write('Edited_audio.wav', round(sr), norm)
             else:
@@ -265,8 +296,8 @@ elif choose == "Music" or choose == "Vowels"or choose =="change pitch":
    # with pause:
         #pause_btn = st.button("⏸️")
     if choose == "Music":
-        vowels=[" Letter A "," Letter B "," Letter D "," Letter G "]
-        s_value = sliders(4,writes=vowels)
+        vowels=[" drums "," piano "," juitar "]
+        s_value = sliders(3,writes=vowels)
         open_mp3(s_value)
     if choose == "Vowels":
         vowels=[" Letter A "," Letter B "," Letter D "," Letter G "]
