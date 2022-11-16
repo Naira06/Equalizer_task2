@@ -111,10 +111,10 @@ def fourier_trans(magnitude=[], time=[], sr=0):
         duration = n_samples*sample_period
         n_samples=round(sr*duration)
     full_mag=np.fft.rfft(magnitude)
-    fft_magnitudes = np.abs(full_mag)
-    fft_phase = np.angle(full_mag)
+    # fft_magnitudes = np.abs(full_mag)
+    # fft_phase = np.angle(full_mag)
     fft_frequencies = np.fft.rfftfreq(n_samples, sample_period)
-    return fft_magnitudes, fft_frequencies, fft_phase,full_mag,duration
+    return fft_frequencies,full_mag,duration
 
 
 def inverse_f(mag=[]):
@@ -150,7 +150,7 @@ def open_csv(slider_v):
         signal_upload = pd.read_csv(upload_file)
         time = signal_upload[signal_upload.columns[0]]
         signal_y = signal_upload[signal_upload.columns[1]]
-        Mag, freq, f_mag,full_mag,duration = fourier_trans(signal_y, time)
+        freq,full_mag,duration = fourier_trans(signal_y, time)
         with time_col:
             plot(time, signal_y)
         if (st.sidebar.checkbox("Input spectro")):
@@ -164,15 +164,15 @@ def open_csv(slider_v):
                 with columns[i]:
                     frequency_val = (i)*min_frequency_value
                     st.write(f"  { frequency_val } HZ ")
-            newarr = np.array_split(Mag, 10)
+            newarr = np.array_split(full_mag, 10)
             for i in range(10):
                 newarr[i] = newarr[i]*slider_v[i]
             arr = np.concatenate(newarr)
             with choose_col2:
                 if inver_btn:
                     with inver_col:
-                        new_rec = rect_form(arr, f_mag)
-                        new_s = inverse_f(new_rec)
+                        # new_rec = rect_form(arr, f_mag)
+                        new_s = inverse_f(arr)
                         plot(time, new_s)
                         if (st.sidebar.checkbox("output spectro")):
                             plt_spectrogram(new_s, 2)
@@ -198,24 +198,26 @@ def open_csv(slider_v):
 def open_mp3(s_value):
     if upload_file:
         if choose=="Music":
-            sr, yf = wavfile.read(upload_file)
-            Mag, freq, f_mag,full_mag ,duration= fourier_trans(magnitude=yf, sr=sr)
+            sr, signal = wavfile.read(upload_file)
+            # signal=yf[:,0]
+            freq,full_mag ,duration= fourier_trans(magnitude=signal, sr=sr)
             with time_col:
-                yf1=np.ravel(yf)
-                length = yf1.shape[0] / sr
-                time = np.linspace(0., length,  yf1.shape[0])
-                plot(time,yf1)
+                yf1=np.ravel(signal)
+                length = signal.shape[0] / sr
+                time = np.linspace(0., length,  signal.shape[0])
+                # time=np.arange(len(signal))/float(sr)
+                plot(time,signal)
                 if st.sidebar.checkbox("normal spectrogram"):
-                   plt_spectrogram(yf1,sr)
+                   plt_spectrogram(signal,sr)
                 st.audio(upload_file, format='audio/wav')
             p_notes=getnotes()
             st.write(p_notes)
             m_signal=full_mag
-            m_signal[int(duration*p_notes.get("G2")) :int(duration* p_notes.get("C8"))] *= sliders[0]    #drums
+            m_signal[int(duration*p_notes.get("G2")) :int(duration*p_notes.get("C8"))] *= sliders[0]    #drums
     
             m_signal[int(duration*0)  :int(duration* 450)] *= sliders[3]  #piano
          
-            m_signal[int(duration*p_notes.get("C1")) :int(duration* p_notes.get("G7"))] *= sliders[2]   #guitar
+            m_signal[int(duration*p_notes.get("C1")) :int(duration*p_notes.get("G7"))] *= sliders[2]   #guitar
                 
         elif choose=="change pitch":
             signal_y,sr=librosa.load(upload_file)
@@ -239,7 +241,7 @@ def open_mp3(s_value):
         elif choose == "Vowels":
             sr, yf = wavfile.read(upload_file)
             yf1=np.ravel(yf)
-            Mag, freq, f_mag,full_mag,duration = fourier_trans(magnitude=yf, sr=sr)
+            freq,full_mag,duration = fourier_trans(magnitude=yf, sr=sr)
             with time_col:
                 length =  yf1.shape[0] / sr
                 time = np.linspace(0., length,  yf1.shape[0])
@@ -247,6 +249,7 @@ def open_mp3(s_value):
                 if (st.sidebar.checkbox("Input spectro")):
                    with time_col:
                     plt_spectrogram(yf1, sr)
+                st.audio(upload_file, format='audio/wav')
             y2 = full_mag[0:len(freq)]
             condition = ((freq > 500) & (freq < 1050))  # Letter A
             y2[condition] = y2[condition]*s_value[0]
@@ -271,11 +274,12 @@ def open_mp3(s_value):
             else:
                 with inver_col:
                     plot(time, y2_id)
+                    st.sidebar.audio('Edited_audio.wav', format='audio/wav')
                     if (st.sidebar.checkbox("output spectro")):
                      with inver_col:
                       plt_spectrogram( y2_id, sr)
                       write('Edited_audio.wav', sr, y2.astype(np.int16))
-                     st.sidebar.audio('Edited_audio.wav', format='audio/wav')
+                     
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
