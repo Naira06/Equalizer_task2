@@ -105,7 +105,7 @@ def fourier_trans(magnitude=[], time=[], sr=0):
     n_samples = len(magnitude)
     if sr == 0:
         sample_period = time[1]-time[0]
-        duration=0
+        duration=n_samples*sample_period
     else:
         sample_period=1/sr
         duration = n_samples*sample_period
