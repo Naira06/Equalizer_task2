@@ -96,7 +96,11 @@ def plot(time, magnitude):
 def plt_spectrogram(signal, fs):
     fig= plt.figure(figsize=(20,4))
     fig.tight_layout(pad=10.0)
-    plt.specgram(signal, Fs=fs,cmap="jet")
+    if choose=="Biomedical Signal":
+        signal_d=signal[0:98]
+    else:
+        signal_d=signal
+    plt.specgram(signal_d, Fs=fs,cmap="jet")
     plt.colorbar()
     st.pyplot(fig) 
 
