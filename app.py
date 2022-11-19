@@ -1,5 +1,5 @@
 import math
-from signal import signal
+# from signal import signal
 import altair as alt
 import librosa
 import librosa.display
@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.preprocessing import power_transform
+# from sklearn.preprocessing import power_transform
 import streamlit as st
 import streamlit_vertical_slider as svs
-from scipy.fft import irfft, rfft, rfftfreq
+# from scipy.fft import irfft, rfft, rfftfreq
 from scipy.io import wavfile
 from scipy.io.wavfile import write
 
@@ -45,15 +45,21 @@ st.write(
 st.write(
     '<style>div.st-bf{flex-direction:column;} div.st-ag{font-weight:bold;padding-left:2px;}</style>', unsafe_allow_html=True)
 choose = st.radio("", ("Sin wave", "Music", "Vowels", "Biomedical Signal","change pitch"))
+
 # declare then in function function
+if choose=='Sin wave'or choose=='Biomedical Signal':
+    types="csv"
+else:
+    types="wav"
+
 upload_col1, choose_col2 = st.columns([1, 3])
 with upload_col1:
-    upload_file = st.sidebar.file_uploader(" ")
-spec_col,app_col=st.sidebar.columns(2,gap="small")
-with spec_col: 
-   n_spectro=st.sidebar.checkbox("spectrogram")
-with app_col:
-    inver_btn=st.sidebar.button("Apply")
+    upload_file = st.sidebar.file_uploader(" ",type=types)
+
+ 
+n_spectro=st.sidebar.checkbox("spectrogram")
+
+inver_btn=st.sidebar.button("Apply")
 
 
 
@@ -67,11 +73,11 @@ def sliders(no_col,writes=[]):
             if slider == None:
                 slider  = 1 
             sliders.append(slider) 
-    if choose != "Sin wave":
-        for i in range(0, no_col):
-            with columns[i]:
-                slider_val = writes[i]
-                st.write(f" { slider_val }")
+    
+    for i in range(0, no_col):
+        with columns[i]:
+            slider_val = writes[i]
+            st.write(f" { slider_val }")
     return sliders
 
 time_col, inver_col = st.columns(2, gap='small')
@@ -114,10 +120,7 @@ def fourier_trans(magnitude=[], time=[], sr=0):
     else:
         sample_period=1/sr
         duration = n_samples*sample_period
-        n_samples=round(sr*duration)
     full_mag=np.fft.rfft(magnitude)
-    # fft_magnitudes = np.abs(full_mag)
-    # fft_phase = np.angle(full_mag)
     fft_frequencies = np.fft.rfftfreq(n_samples, sample_period)
     return fft_frequencies,full_mag,duration
 
@@ -125,14 +128,6 @@ def fourier_trans(magnitude=[], time=[], sr=0):
 def inverse_f(mag=[]):
     signal = np.fft.irfft(mag)
     return signal
-
-
-def rect_form(mag=[], phase=[]):
-    rect_array = []
-    for i in range(len(mag)):
-        rect_array.append(mag[i]*(math.cos(phase[i])+math.sin(phase[i])*1j))
-        i += 1
-    return rect_array
 
 def getnotes():   
     # White keys are in Uppercase and black keys (sharps) are in lowercase
@@ -157,33 +152,17 @@ def open_csv(slider_v):
         freq,full_mag,duration = fourier_trans(signal_y, time)
         with time_col:
             plot(time, signal_y)
-        if n_spectro:
-            with time_col:
+            if n_spectro:
                 plt_spectrogram(signal_y, 2)
         
         if choose == "Sin wave":
-            splitsfreq=np.array_split(freq,10)
-            splits = np.array_split(full_mag,10 )
-            min_frequency_value = int(len(freq)/10)
-            columns = st.columns(10)
-            for i in range(0, 10):
-                with columns[i]:
-                    frequency_val =int(max(splitsfreq[i]))
-                    st.write(f"  { frequency_val } HZ ")
-            for i in range(10):
-                splits[i] = splits[i]*slider_v[i]
-            full_mag = np.concatenate(splits)
+            for i in range(0,10):
+                full_mag[10*i:10*(i+1)]*=slider_v[i]
+
         elif choose == "Biomedical Signal":
-            Bradycardia = slider_v[0]
-            normal_range = slider_v[1]
-            atrial_tachycardia = slider_v[2]
-            Atrial_flutter = slider_v[3]
-            Atrial_Fibrillation = slider_v[4]
-            full_mag[0:60] *= Bradycardia
-            full_mag[60:90] *= normal_range
-            full_mag[90:250] *= atrial_tachycardia
-            full_mag[250:300] *= Atrial_flutter
-            full_mag[300:] *= Atrial_Fibrillation
+            ranges=[0,60,90,250,300,600]
+            for i,j in zip(range(len(slider_v)),range(0,len(ranges))):
+                full_mag[ranges[j]:ranges[j+1]]*=slider_v[i]
         if inver_btn:
             new_si = inverse_f(full_mag)
             with inver_col:
@@ -194,29 +173,7 @@ def open_csv(slider_v):
 
 def open_mp3(s_value):
     if upload_file:
-        if choose=="Music":
-            sr, signal = wavfile.read(upload_file)
-            # signal=yf[:,0]
-            freq,full_mag ,duration= fourier_trans(magnitude=signal, sr=sr)
-            with time_col:
-                yf1=np.ravel(signal)
-                length = signal.shape[0] / sr
-                time = np.linspace(0., length,  signal.shape[0])
-                # time=np.arange(len(signal))/float(sr)
-                plot(time,signal)
-                if n_spectro:
-                   plt_spectrogram(signal,sr)
-                st.audio(upload_file, format='audio/wav')
-            p_notes=getnotes()
-            st.write(p_notes)
-            m_signal=full_mag
-            m_signal[int(duration*p_notes.get("G2")) :int(duration*p_notes.get("C8"))] *= sliders[0]    #drums
-    
-            m_signal[int(duration*0)  :int(duration* 450)] *= sliders[3]  #piano
-         
-            m_signal[int(duration*p_notes.get("C1")) :int(duration*p_notes.get("G7"))] *= sliders[2]   #guitar
-                
-        elif choose=="change pitch":
+        if choose=="change pitch":
             signal_y,sr=librosa.load(upload_file)
             length = signal_y.shape[0] / sr
             time = np.linspace(0., length,  signal_y.shape[0])
@@ -235,78 +192,91 @@ def open_mp3(s_value):
                     norm=np.int16((final_s)*(32767/final_s.max()))
                     write('Edited_audio.wav' , round(sr ), norm)
                     st.audio('Edited_audio.wav', format='audio/wav')
-        elif choose == "Vowels":
-            sr, yf = wavfile.read(upload_file)
-            yf1=np.ravel(yf)
-            freq,full_mag,duration = fourier_trans(magnitude=yf, sr=sr)
-            with time_col:
-                length =  yf1.shape[0] / sr
-                time = np.linspace(0., length,  yf1.shape[0])
-                plot(time,  yf1)
-                if n_spectro:
-                   with time_col:
-                    plt_spectrogram(yf1, sr)
-                st.audio(upload_file, format='audio/wav')
-            y2 = full_mag[0:len(freq)]
-            condition = ((freq > 500) & (freq < 1050))  # Letter A
-            y2[condition] = y2[condition]*s_value[0]
-
-            condition = ((freq > 1100) & (freq < 2000))  # Letter B
-            y2[condition] = y2[condition]*s_value[1]
-
-            condition = ((freq > 3000) & (freq < 4000))  # Letter D
-            y2[condition] = y2[condition]*s_value[2]
-
-            condition = ((freq > 5800) & (freq < 7000))  # Letter G
-            y2[condition] = y2[condition]*s_value[3]
-            y2 = inverse_f(y2)
-            y2_id=np.ravel(y2)
-        if inver_btn:
-            if choose == "Music":
-                with inver_col:
-                    data = inverse_f(m_signal)
-                    norm = np.int16(data*(32767/data.max()))
-                    write('Edited_audio.wav', round(sr), norm)
-                    st.sidebar.audio('Edited_audio.wav', format='audio/wav')
-            else:
-                with inver_col:
-                    plot(time, y2_id)
-                    st.sidebar.audio('Edited_audio.wav', format='audio/wav')
+        else:
+            sr, signal = wavfile.read(upload_file)
+            if choose=="Music":
+                magnitude = signal[:, 0]
+                time = np.arange(len(magnitude)) / float(sr)
+                freq,full_mag ,duration= fourier_trans(magnitude=magnitude , sr=sr)
+                with time_col:
+                    plot(time,magnitude)
                     if n_spectro:
-                     with inver_col:
-                      plt_spectrogram( y2_id, sr)
-                      write('Edited_audio.wav', sr, y2.astype(np.int16))
-                     
+                        plt_spectrogram(magnitude,sr)
+                    st.audio(upload_file, format='audio/wav')
+                p_notes=getnotes()
+                f_signal=full_mag
+               
+                # f_signal[int(duration*p_notes.get("G2")) :int(duration*p_notes.get("C8"))] *= sliders[0]    #drums
+                f_signal[int(duration*900) :int(duration* 6000)] *= 1.15 *s_value[0] #flute
+                f_signal[int(duration*500) :int(duration* 8000)] *= s_value[1]   #ACCORDION
+                f_signal[int(duration*0) :int(duration* 2000)] *= s_value[2]   #STEEL PAN
+                # f_signal[int(duration*26) :int(duration* 1300)] *= s_value[3]   #drums
+                # f_signal[int(duration*70) :int(duration* 6300)] *= s_value[4]   #oud
+                f_signal[int(duration*2000) :int(duration* 12000)] *= s_value[3]   #sexaphone
+                if inver_btn:
+                    with inver_col:
+                        data = inverse_f(f_signal)
+                        plot(time,data)
+                        if n_spectro:
+                            plt_spectrogram(data,sr) 
+                        norm = np.int16(data*(32767/data.max()))
+                        write('Edited_audio.wav', round(sr), norm)
+                        st.audio('Edited_audio.wav', format='audio/wav')
+            elif choose == "Vowels":
+                signal_y=np.ravel(signal)
+                freq,full_mag,duration = fourier_trans(magnitude=signal, sr=sr)
+                with time_col:
+                    length =  signal_y.shape[0] / sr
+                    time = np.linspace(0., length,  signal_y.shape[0])
+                    plot(time, signal_y)
+                    if n_spectro:
+                        with time_col:
+                            plt_spectrogram(signal_y, sr)
+                        st.audio(upload_file, format='audio/wav')
+                v_signal = full_mag[0:len(freq)]
+                condition = ((freq > 500) & (freq < 1050))  # Letter A
+                v_signal[condition] = v_signal[condition]*s_value[0]
+
+                condition = ((freq > 1100) & (freq < 2000))  # Letter B
+                v_signal[condition] = v_signal[condition]*s_value[1]
+
+                condition = ((freq > 3000) & (freq < 4000))  # Letter D
+                v_signal[condition] = v_signal[condition]*s_value[2]
+
+                condition = ((freq > 5800) & (freq < 7000))  # Letter G
+                v_signal[condition] = v_signal[condition]*s_value[3]
+                v_signal = inverse_f(v_signal)
+                f_signal=np.ravel(v_signal)
+                if inver_btn:
+                    with inver_col:
+                        plot(time, f_signal)
+                        st.sidebar.audio('Edited_audio.wav', format='audio/wav')
+                        if n_spectro:
+                            plt_spectrogram( f_signal, sr)
+                            write('Edited_audio.wav', sr, v_signal.astype(np.int16))
+                            st.audio('Edited_audio.wav', format='audio/wav')    
 
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-if choose == "Sin wave":
-    s_value = sliders(no_col=10,writes=[])
-    open_csv(s_value)
-elif choose == "Biomedical Signal":
-    #upload_file_plceholder.file_uploader("Browse", type=["csv"])
-    # if upload_file:
-    writes=[" Bradycardia "," Normal_Range "," Atrial_Tachycardia "," Atrial_Flutter  "," Atrial_Fibrillation "]
-    s_value = sliders(no_col=5,writes=writes)
+if choose == "Sin wave" or choose == "Biomedical Signal":
+    if choose == "Sin wave":
+        writes=[" 0 : 10 "," 10 : 20 "," 20 : 30"," 30 : 40"," 40 : 50 "," 50 : 60 "," 60 : 70 "," 70 : 80"," 80 : 90"," 90 : 100 "]
+        s_value=sliders(no_col=10,writes=writes)
+   
+    elif choose == "Biomedical Signal":
+        writes=[" Bradycardia "," Normal_Range "," Atrial_Tachycardia "," Atrial_Flutter  "," Atrial_Fibrillation "]
+        s_value = sliders(no_col=5,writes=writes)
     open_csv(s_value)
 
 elif choose == "Music" or choose == "Vowels"or choose =="change pitch":
-    #upload_file_plceholder.file_uploader("Browse", type=["mp3"])
-    # if upload_file:
-
-    play, pause = st.columns([0.5, 5])
-    #with play:
-        #play_btn = st.button("▶️,⏭️,⏮️")
-   # with pause:
-        #pause_btn = st.button("⏸️")
     if choose == "Music":
-        vowels=[" drums "," piano "," guitar "]
-        s_value = sliders(3,writes=vowels)
-        open_mp3(s_value)
-    if choose == "Vowels":
+        vowels=[" flute "," ACCORDION "," STEEL PAN ","sexaphone"]
+        s_value = sliders(4,writes=vowels)
+        
+    elif choose == "Vowels":
         vowels=[" Letter A "," Letter B "," Letter D "," Letter G "]
         s_value = sliders(4,writes=vowels)
-        open_mp3(s_value)
-    if choose=="change pitch":
+        
+    elif choose=="change pitch":
         s_value=0
-        open_mp3(s_value)
+    open_mp3(s_value)
